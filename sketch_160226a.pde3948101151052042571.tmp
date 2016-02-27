@@ -1,0 +1,217 @@
+
+int gModo=1; //1 es android
+
+int BAUD_RATE = 115200;//230400;//921600;//460800;//921600; //921600 for Teensy2/Teensy3/Leonardo 460800
+int gOscHz = 500; //options include 250, 500, 1000, 2000, 4000, 8000, 16000, 32000 Hz - high bandwidth with many channels will exceed USB/Bluetooth bandwidth
+int gOscChannels = 4; //number of channels to report
+float gGraphTotalTimeSec = 2; //e.g. if 1 then the last 1 second of data is displayed
+float tickSpacing = gGraphTotalTimeSec/10; //e.g. if 0.2 then vertical lines once every 200 ms 
+int serialPortNumber = 0; //set to 0 for automatic detection
+int screenWid = 480; //width of scrren, in pixels
+int screenHt = 800; //height of screen, in pixels
+boolean saveAsText = false; //save a text file you can view with excel
+boolean offsetTraces = true; //vertically shift different channels to avoid overlap
+boolean testSignal = false;
+boolean testSimul = false;
+boolean autoScale = false; //adjust vertical scale based on observed signal variability
+
+int anchoPantalla=screenWid;
+int altoPantalla=screenHt;
+int anchoTeclado=anchoPantalla-80; // teclado virtual del UI 
+
+//scrollbar
+int anchoBarra=120;                   
+int altoBarra=35;                   
+float zoom=1;
+
+
+boolean modo_serie = true;
+int gFrecuenciaCardiaca=60;
+int gFrecuenciaMuestra=12;
+int gFrecuenciaMuestra2=5;
+int gEscala=1;
+int gEscalaDiv=1;
+int gFrameRate=60; //60
+boolean modo_conectado=false;
+
+// Boooleanos, habria que armar una maquina de estados
+boolean isConfiguring = true;
+boolean isUI = true;         // pantalla UI vs pantalla REC
+boolean isBT = false;          // Bluetooth conectado o no
+boolean isBTiniciado=false;   //   
+boolean isRECiniciado=false;   // 
+boolean isSonidoOn=true;
+
+
+//************   no need to edit lines below here *******
+
+
+import android.content.Intent;
+import android.os.Bundle;
+import ketai.net.bluetooth.*;
+import ketai.ui.*;
+import ketai.net.*;
+import ddf.minim.*;
+
+import android.media.*;
+import android.content.res.*;
+import android.content.Context;
+import android.os.Vibrator;
+
+
+//this script was derived from  Sofian Audry’s  Poorman's oscilloscope http://accrochages.drone.ws/en/node/90
+// and modified by 
+
+//import processing.serial.*;
+import java.util.Date; //for date/time used by saveAsText
+//PrintWriter output; // for file storage used by saveAsText
+//Serial port;      // Create object from Serial class
+int[]  val;              // Data received from the serial port
+int cnt=1; //sample count
+int cnt2=1;
+int wm1; //screenWidth -1
+int[][] values; //data for up to 3 analog channels
+int maxResidualBytes = 1024; //maximum bytes left over from previous transmission
+int residualBytes = 0; //number of bytes left over from previous transmission
+int[]  residualRawData; //array with bytes left over from previous transmission
+//float screenScale24bit = float(screenHt-1)/16777215;
+int[] channelMin, channelMax, channelIntercept;
+float[] channelSlope;
+float pixelsPerSample = 1;
+int Margin = 4; //margin in pixels for top and bottom
+int halfScreenHt = screenHt / 2;
+int altoBarrido=screenHt/(gOscChannels+1); // altura de los canales a mostrar
+int positionHt = 200; //height of vertical bar shown at leading edge of oscilloscope
+long valuesReceived = 0; 
+long calibrationFrames = 240; //number of screen refreshes prior to plotting - allows us to estimate sample rate
+float lastSamplePlotted = 0;
+long startTime;
+int kOscMaxChannels = 15; // numero maximo de canales q se pueden registrar
+int lineaMenu = 60;
+PFont f;
+PImage p;
+KetaiVibrate vibe;   // ojo a los permisos del sketch, si no activas vibrate se cuelga
+
+
+int[][] lineColorsRGB = { {255,0,0}, {255,0,0}, {255,0,0}, {255,0,0}, {255,0,0}, {255,0,0},
+                         {255,0,0}, {255,0,0}, {255,0,0}, {255,0,0}, {255,0,0}, {255,0,0},
+                         {255,0,0}, {255,0,0}, {255,0,0} };
+
+void setup() {
+  //Set the size of the screen (this is not really necessary in Android mode, but we'll do it anyway)
+  size(480,800);
+
+  textSize(28);
+  
+  orientation(PORTRAIT);
+  //Turn on smoothing to make everything pretty.
+   do_setup();
+  // Vibrator v= (Vibrator) getSystemService(VIBRATOR_SERVICE);
+//  vibe = new KetaiVibrate(this);
+
+};
+
+void do_setup()
+{
+//  if (modo_conectado)
+//    ads_setupSimple();
+  pantalla_inicia();  
+  canales_inicia();
+  f = createFont("Arial",16,true);  
+      background(250); // background 0 = black, 255= white
+  p = loadImage("icono_ht2.jpg");
+  frameRate(gFrameRate); //refresh screen gFrameRate times per second
+
+  
+}
+
+ 
+void draw() {
+       serDecode_simulando();
+
+if(isUI){
+  drawUI();
+  return;
+}
+       if (calibrationFrames > 0) {
+        if ((startTime == 0) && (valuesReceived > 0)){
+          valuesReceived = 0; 
+          startTime = millis();
+        }
+        calibrationFrames--;
+        if (calibrationFrames == 0) {
+          calibrateFrameRate(); 
+        }
+        return;
+      } //if still in initial calibration frames period
+
+    
+       fill(250); // semi-transparent white
+       rect(0, lineaMenu, screenWid,height-lineaMenu);
+
+       pinta_textos(anchoPantalla/2,20,color(0,0,0)); 
+ 
+//      background(250); // background 0 = black, 255= white
+      stroke(color(255,0,0)); // barra ancha separando menu superior
+      strokeWeight(4);
+      line(0,lineaMenu,screenWid,lineaMenu);
+        
+      //next: vertical lines for seconds...
+      stroke(120);
+      strokeWeight(1);
+      
+      float xpos = tickSpacing;
+      while (xpos < width) {  
+        line(xpos,lineaMenu,xpos,screenHt);  
+        xpos = xpos + tickSpacing;
+      }
+   
+   
+   for (int i = 0; i < gOscChannels; i++) {
+        stroke(lineColorsRGB[i][0],lineColorsRGB[i][1],lineColorsRGB[i][2]);
+        int offset=altoBarrido*i+altoBarrido/2+lineaMenu;
+        if(!autoScale){
+              arr_int ss= new arr_int(wm1);
+              for (int x=2; x<wm1; x++) ss.set(x,gEscala*values[i][x]);
+              ss.remove_offset();
+             for (int x=2; x<wm1; x++) {
+                int y1=ss.get(x-1);
+                int y2=ss.get(x);
+                line (x-1,  offset+float(y1)/float(gOscChannels+2), x, offset+float(y2)/float((gOscChannels+2)));
+             }
+        } else {
+              arr_int ss= new arr_int(wm1);
+              for (int x=2; x<wm1; x++) ss.set(x,gEscala*values[i][x]);
+              ss.remove_offset();
+            
+             for (int x=2; x<wm1; x++) {
+                 int y1=ss.get(x-1);
+                 int y2=ss.get(x);
+                 line (x-1,  offset+1*y1/(gOscChannels+2), x, offset+1*y2/(gOscChannels+2));
+             }
+        }
+      }
+      
+      //draw the leading edge line
+      stroke(255,255,0);
+      line(cnt,halfScreenHt-positionHt,cnt,halfScreenHt+positionHt);  
+
+        fill(250); // semi-transparent white
+        rect(0, 0, screenWid,lineaMenu);
+        int[] marcas=new int[200];
+        int sss=values[1].length;
+        fill(0);
+  
+      //pinta barra alta
+        fill(0); 
+        textFont(f,10);
+        text("FC",39,lineaMenu/3-5);
+        textFont(f,32);
+        text(gFrecuenciaCardiaca,30,5+2*lineaMenu/3);
+        textFont(f,7);
+        text("bpm",39,14+2*lineaMenu/3);
+        image(p, width-p.width*1.3, 0, p.width*1.3, p.height);
+  
+  
+
+};

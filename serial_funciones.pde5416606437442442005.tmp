@@ -1,0 +1,17 @@
+
+void serDecode_simulando() { //assuming Arduino is only transfering active channels
+ int num_puntos=4; //variable empirica, para aproximar lo mostrado a lo q sale del BT
+ if (calibrationFrames == 0) { //drawing display
+  for(int ii=0;ii<num_puntos;ii++){
+    for (int ch = 0; ch < gOscChannels; ch++) 
+                  values[ch][cnt] = (int)(90*sin(2*3.1415*gFrecuenciaMuestra/900*cnt2))+(int)(3*90*pow(sin(2*3.1415*gFrecuenciaMuestra2/900*cnt2),1));  //put it in the array
+                 
+     cnt++;  //increment the count
+     cnt2++;
+     if (cnt > wm1) cnt = 1;
+  }
+ } else {
+            valuesReceived+=num_puntos;
+ }
+ 
+}               
