@@ -1,6 +1,5 @@
 void splash_screen() {
 //  KetaiAlertDialog.popup(this, "EKG Visor 0.1a", "(c) 2016 JA Barios, HeartTrack");
-  
 }
 
 //cabecero en draw_REC
@@ -12,7 +11,6 @@ void pinta_textos(int cx,int cy,color clr) {
 // barra derecha
 void pinta_borde() {
   fill(color(255, 255, 200));
-  
   rect(anchoPantalla-40,altoPantalla/2,80,altoPantalla);
 }
 
@@ -29,7 +27,7 @@ void pinta_barrapie() {
   int intervalo_marcadores=10;
   int current_time=1234;
   int proximo_toc=122;
-  text(""+nf((int)estHz, 2)+" "+nf(gFrecuenciaMuestra2, 2)+" "+nf(cnt2, 6)+" "+nf(((int)(1000.0*gDuracionPantalla)),4)+" "+gTextoMensaje+" r:"+HTversion, anchoPantalla/2, altoPantalla-8);
+  text(""+nf((int)estHz, 2)+" "+nf(gFrecuenciaMuestra2, 2)+" "+nf(cnt2, 6)+" "+nf((int)zoom, 3)+" "+nf(((int)(1000.0*gDuracionPantalla)),4)+" "+gTextoMensaje+" r:"+HTversion, anchoPantalla/2, altoPantalla-8);
   if(!isBT){
     fill(color(128,0,0));
     rect(16, altoPantalla-12, 32, 32);
@@ -94,9 +92,9 @@ void drawUI()
   }else{
       text("BT", offset, 60);
   }
-  text("BT par", offset+anchoTeclado/3, 60); 
+  text("BT unpar", offset+anchoTeclado/3, 60); 
   text("About", offset+anchoTeclado/3*2, 60);
-  text("Reset", offset, 160);
+  text("BT id", offset, 160);
   text("Acelera", offset+anchoTeclado/3, 160); 
   text("Frena", offset+anchoTeclado/3*2, 160);
   text("Sonido", offset, 260);
@@ -108,6 +106,10 @@ void drawUI()
   pinta_barrapie();
   stroke(250);
   text(HTversion, altoPantalla-40, 2);
+
+  textSize(32);
+  textAlign(CENTER);
+  text(BT_id, anchoPantalla/2,360);
   popStyle();
  
 }

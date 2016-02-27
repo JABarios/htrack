@@ -6,6 +6,8 @@ String HTversion="001";
 
 
 int gModo=1; //1 es android
+boolean gDebugMemsaje=true;
+
 
 int BAUD_RATE = 115200;//230400;//921600;//460800;//921600; //921600 for Teensy2/Teensy3/Leonardo 460800
 int gOscHz = 500; //options include 250, 500, 1000, 2000, 4000, 8000, 16000, 32000 Hz - high bandwidth with many channels will exceed USB/Bluetooth bandwidth
@@ -77,7 +79,7 @@ String myString = null;
 String linea_leida = ""; //buffer para mensajes BT
 String resto_linea = "";   //buffer mensaje BT pendiente de procesar 
 String info = "";          //almacen temporal para proceso  
-
+String BT_id="";
 
 //import processing.serial.*;
 import java.util.Date; //for date/time used by saveAsText

@@ -47,6 +47,7 @@ void onActivityResult(int requestCode, int resultCode, Intent data) {
 
 String getBluetoothInformation()
 {
+  BT_id="";
   String btInfo = "Server Running: ";
   btInfo += bt.isStarted() + "\n";
   btInfo += "Device Discoverable: "+bt.isDiscoverable() + "\n";
@@ -54,8 +55,9 @@ String getBluetoothInformation()
   ArrayList<String> devices = bt.getConnectedDeviceNames();
   for (String device: devices)
   {
+  BT_id+= device+"\n";
   btInfo+= device+"\n";
   }
-  println(btInfo);
+  m_print(btInfo);
   return btInfo;
 }

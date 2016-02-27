@@ -36,7 +36,7 @@ void mousePressed() {
 //      isUI=false;
       return;
     } else if (mouseX > anchoTeclado/3 && mouseX < anchoTeclado*2/3) {
-      byte[] data = {'c'};                 // cambiar onda
+      byte[] data = {'c'};                 // desparear
     //  bt.broadcast(data);
       isConfiguring = false;
       isBT=false;
@@ -44,7 +44,7 @@ void mousePressed() {
     } else {
        byte[] data = {'h','e','a','r','t','t','r','a','c','k','\r'};
        bt.broadcast(data);
-       println("Enviando " + data);
+       m_print("Enviado: " + data);
        return;
     }
   }
