@@ -1,5 +1,5 @@
 void inicia_bluetooth() {
-  bt = new KetaiBluetooth(this);
+//  bt = new KetaiBluetooth(this);
   ArrayList names;
   background(78, 93, 75);
   klist = new KetaiList(this, bt.getPairedDeviceNames());
@@ -27,19 +27,15 @@ void onBluetoothDataEvent(String who, byte[] data) {
     linea_leida=linea_leida+info.substring(0, nn);
     resto_linea=info.substring(nn+1);
   }
-  
-//  println("leido: -->"+linea_leida);
 }
 
 void onCreate(Bundle savedInstanceState) {
   super.onCreate(savedInstanceState);
-//  bt = new KetaiBluetooth(this);
+  bt = new KetaiBluetooth(this);
 }
 
 void onKetaiListSelection(KetaiList klist) {
   String selection = klist.getSelection();
-  println("Hemos elegido  -->"+selection);
-  
   bt.connectToDeviceByName(selection);
   //dispose of list for now
   klist = null;
@@ -60,7 +56,6 @@ String getBluetoothInformation()
   {
   btInfo+= device+"\n";
   }
-  
   println(btInfo);
   return btInfo;
 }
